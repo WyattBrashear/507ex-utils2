@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../507ex/.idea/507ex.iml" filepath="$PROJECT_DIR$/../507ex/.idea/507ex.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/507ex-rewrite.iml" filepath="$PROJECT_DIR$/.idea/507ex-rewrite.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../CLIF/.idea/CLIF.iml" filepath="$PROJECT_DIR$/../CLIF/.idea/CLIF.iml" />
     </modules>
   </component>
 </project>

@@ -86,20 +86,21 @@ def build(directory: str):
     print(f"Successfully built {directory}.507ex")
 
 def execute(path: str):
+    print(path)
     current_path = os.getcwd()
     reading_depends = False
     has_depends = False
     dependency_platform = ''
     fromcar = False
     #CAR Server logic
-    if "http://" or "https://" in path:
+    if path.startswith("http://") or path.startswith("https://"):
         r = requests.post(path, data={'secret_code': hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()})
         if r.status_code == 401:
             print("Your Secret Code is invalid!")
         with open("tmp.507ex", 'wb') as f:
             f.write(r.content)
         fromcar = True
-    path = "tmp.507ex"
+        path = "tmp.507ex"
     with open(path, 'rb') as f:
         if f.readline() != b'FZX2\n':
             raise ValueError('Invalid Executable!')
