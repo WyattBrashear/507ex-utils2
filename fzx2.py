@@ -17,7 +17,7 @@ from werkzeug.utils import secure_filename
 parser = argparse.ArgumentParser()
 parser.add_argument('mode', choices=['build', 'upload', 'exec', 'unpack', 'start_server'], help='The operation to perform.')
 parser.add_argument('path', help='The path to the Executable or folder')
-args = parser.parse_args()
+args = parser.parse_args(sys.argv[1:])
 app = Flask(__name__)
 
 @app.route('/push', methods=['POST'])
