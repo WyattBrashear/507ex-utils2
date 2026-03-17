@@ -8,7 +8,10 @@ import hashlib
 import os
 
 app = Flask(__name__)
-
+try:
+    os.mkdir('./storage')
+except FileExistsError:
+    pass
 @app.route('/push', methods=['POST'])
 def push():
     print(os.getcwd())

@@ -41,11 +41,14 @@ Compiled Executable Method:
 ## Installation
 ### Method 1 (Compiled Executable)
 1. Download the latest release from the releases page.
-2. Run the executable. (Reccomended to be done in a terminal)
+2. Run the executable. (Recommended to be done in a terminal)
 ### Method 2 (Source Code)
 1. Clone the Repository using `git clone https://github.com/WyattBrashear/507ex-utils2.git`
 2. Run: `pip install -r requirements.txt` in order to install the dependencies.
 3. Run the main script using `python3 fzx2.py`
+## Demo Video
+https://drive.google.com/file/d/1QfDZL2Spc7WKqbfCU_m7xSnRLbJdnfNd/view?usp=sharing
+
 ## AI Usage
 As per usual, I am against using AI in my code. All the code in this repository was human written. The instances of AI 
 usage was autocomplete and AI Assistant when I was stuck, pointing me in the right direction (fzx2.py).

@@ -19,7 +19,10 @@ parser.add_argument('mode', choices=['build', 'upload', 'exec', 'unpack', 'start
 parser.add_argument('path', help='The path to the Executable or folder')
 args = parser.parse_args(sys.argv[1:])
 app = Flask(__name__)
-
+try:
+    os.mkdir('./storage')
+except FileExistsError:
+    pass
 @app.route('/push', methods=['POST'])
 def push():
     print(os.getcwd())
