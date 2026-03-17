@@ -1,19 +1,18 @@
 import argparse
-import os
-import sys
-import shutil
 import hashlib
+import json
+import os
+import random
+import shutil
 import subprocess
-import zipfile
-import requests
+import sys
 import uuid
+import zipfile
 from datetime import datetime
+
+import requests
 from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename
-import json
-import random
-import hashlib
-import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('mode', choices=['build', 'upload', 'exec', 'unpack', 'start_server'], help='The operation to perform.')
