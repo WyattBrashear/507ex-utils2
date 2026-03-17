@@ -1,7 +1,7 @@
 # 507ex 2.0 (FZX2)
 ## What is 507ex, and why is there a 2.0?
 A while back, I created a executable format called 507ex (507 Being my brand that I like to put things under). I made one
-mistake one the first one. I used AI in my code. That completely ruined my code. So I decided it was time to rewrite it.
+mistake on the first time. I used AI in my code. That completely ruined my code. So I decided it was time to rewrite it.
 Introducing 507ex 2.0 (Abbreviated as FZX2).
 ### What's New?
 - AI was not used to write code (yay)
@@ -26,3 +26,9 @@ Returns:
   "url": "request.url_root/pull/filename"
 }
 ```
+POST: /pull/<file_id>. Pull an executable from the server. Accepts form data in the following form: {'secret_code': STR}
+Returns:
+The file requested or an error message. Files are sent using flask's send_from_directory function.
+## AI Usage
+As per usual, I am against using AI in my code. All the code in this repository was human written. The instances of AI 
+usage was autocomplete and AI Assistant when I was stuck, pointing me in the right direction (fzx2.py).
