@@ -29,6 +29,23 @@ Returns:
 POST: /pull/<file_id>. Pull an executable from the server. Accepts form data in the following form: {'secret_code': STR}
 Returns:
 The file requested or an error message. Files are sent using flask's send_from_directory function.
+### Running the server
+Source Code Method:
+~~~bash
+python3 fzx2.py start_server
+~~~
+Compiled Executable Method:
+~~~bash
+./fzx2 start_server
+~~~
+## Installation
+### Method 1 (Compiled Executable)
+1. Download the latest release from the releases page.
+2. Run the executable. (Reccomended to be done in a terminal)
+### Method 2 (Source Code)
+1. Clone the Repository using `git clone https://github.com/WyattBrashear/507ex-utils2.git`
+2. Run: `pip install -r requirements.txt` in order to install the dependencies.
+3. Run the main script using `python3 fzx2.py`
 ## AI Usage
 As per usual, I am against using AI in my code. All the code in this repository was human written. The instances of AI 
 usage was autocomplete and AI Assistant when I was stuck, pointing me in the right direction (fzx2.py).
