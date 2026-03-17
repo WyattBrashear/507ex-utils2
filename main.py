@@ -8,12 +8,49 @@ import zipfile
 import requests
 import uuid
 from datetime import datetime
+from flask import Flask, request, send_from_directory
+from werkzeug.utils import secure_filename
+import json
+import random
+import hashlib
+import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument('mode', choices=['build', 'upload', 'exec', 'unpack'], help='The operation to perform.')
+parser.add_argument('mode', choices=['build', 'upload', 'exec', 'unpack', 'start_server'], help='The operation to perform.')
 parser.add_argument('path', help='The path to the Executable or folder')
 args = parser.parse_args()
+app = Flask(__name__)
 
+@app.route('/push', methods=['POST'])
+def push():
+    print(os.getcwd())
+    filename = secure_filename(request.form.get('file_id'))
+    with open(f"storage/{filename}.507ex", 'wb') as f:
+        f.write(request.files['file'].read())
+    with open(f"storage/{filename}.json", 'w') as f:
+        secret_code = random.randint(100000, 999999)
+        data = {
+            'secret_code': hashlib.sha256(str(secret_code).encode()).hexdigest(),
+        }
+        json.dump(data, f)
+    return {
+        'status': 'success',
+        'secret_code': str(secret_code),
+        'url': f'{request.url_root}pull/{filename}'
+    }
+
+@app.route('/pull/<file_id>', methods=['POST'])
+def pull(file_id):
+    try:
+        with open(f"storage/{file_id}.json", 'r') as json_file:
+            codefile = json.load(json_file)
+            secret_code = codefile['secret_code']
+    except FileNotFoundError:
+        return 'File not found', 404
+    if request.form.get('secret_code') == secret_code:
+        return send_from_directory('storage', f"{file_id}.507ex", as_attachment=True)
+    else:
+        return 'Invalid secret code', 401
 #Alright. Lets rewrite this format!
 def build(directory: str):
     #Check for a runfile in the directory
@@ -54,18 +91,29 @@ def execute(path: str):
     reading_depends = False
     has_depends = False
     dependency_platform = ''
+    fromcar = False
+    #CAR Server logic
+    if "http://" or "https://" in path:
+        r = requests.post(path, data={'secret_code': hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()})
+        if r.status_code == 401:
+            print("Your Secret Code is invalid!")
+        with open("tmp.507ex", 'wb') as f:
+            f.write(r.content)
+        fromcar = True
+    path = "tmp.507ex"
     with open(path, 'rb') as f:
         if f.readline() != b'FZX2\n':
             raise ValueError('Invalid Executable!')
+        line_counter = 0
         for line in f:
             if line.startswith(b'!507EX-END-META'):
                 break
-            if line.startswith(b'507ex-hash'):
-                exec_hash = line.split(b'|')[1].decode()
+            if line.startswith(b'507ex-hash|'):
+                exec_hash = line.split(b'|')[1].decode().replace('\n', '')
             if line.startswith(b'507ex-hashmode'):
-                exec_hashmode = line.split(b'|')[1].decode()
+                exec_hashmode = line.split(b'|')[1].decode().replace('\n', '')
             if line.startswith(b'507ex-id'):
-                exec_id = line.split(b'|')[1].decode()
+                exec_id = line.split(b'|')[1].decode().replace('\n', '')
             if line.startswith(b'507ex-depends'):
                 if line.split(b'|')[1].decode() == 'True\n':
                     if input("Executable has dependencies that it wants to install. Continue? (y/n)\n").lower() == 'y':
@@ -85,11 +133,57 @@ def execute(path: str):
             if line.startswith(b'!507EX-DEPENDENCIES'):
                 if has_depends:
                     reading_depends = True
+            line_counter += 1
     os.makedirs(f'{current_path}/.fzx2-runtime/{exec_id}', exist_ok=True)
+    #Hash the executable
+    line_counter +=2
+    with open(path, 'rb') as f:
+        lines = b''.join(f.readlines()[line_counter:])
+        file_hash = hashlib.new(exec_hashmode, lines).hexdigest()
+    pass_hashcheck = False
+    if file_hash == exec_hash:
+        pass_hashcheck = True
+    else:
+        raise ValueError('Hash Verification Failed. Executable may have been damaged.')
+    os.chdir(f'{current_path}/.fzx2-runtime/{exec_id}')
+    with zipfile.ZipFile(f"{current_path}/{path}", 'r') as zippy:
+        zippy.extractall()
+    with open("runfile", 'r') as runfile:
+        runfile_contents = runfile.read()
+    subprocess.run(runfile_contents, shell=True, check=False)
+    #cleanup
+    os.chdir('..')
+    shutil.rmtree(f'{current_path}/.fzx2-runtime/{exec_id}')
+    if fromcar:
+        os.remove(f"{current_path}/tmp.507ex")
 
-    with zipfile.ZipFile(f"{current_path}{path}", 'r') as zippy:
+def upload(path: str):
+    if not os.path.exists(path):
+        raise FileNotFoundError('File not found!')
+    url = input("Please enter the server address: \n")
+    with open(path, 'rb') as f:
+        for line in f:
+            if line.startswith(b'507ex-id|'):
+                exec_id = line.split(b'|')[1].decode()
+                break
+    with open(path, 'rb') as f:
+        r = requests.post(f"{url}/push", files={'file': f}, data={'file_id': exec_id})
+    json_data = r.json()
+    print('Upload Complete!')
+    print(f"Upload URL: {json_data['url']}")
+    print(f"Your Secret Code Is: {json_data['secret_code']}")
+def unpack(path: str):
+    os.mkdir(path)
+    os.chdir(path)
+    with zipfile.ZipFile(path, 'r') as zippy:
         zippy.extractall()
 if args.mode == 'build':
     build(args.path)
 if args.mode == 'exec':
     execute(args.path)
+if args.mode == 'upload':
+    upload(args.path)
+if args.mode == 'unpack':
+    unpack(args.path)
+if args.mode == 'start_server':
+    app.run()
