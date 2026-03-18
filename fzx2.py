@@ -150,7 +150,10 @@ def execute(path: str):
         zippy.extractall()
     with open("runfile", 'r') as runfile:
         runfile_contents = runfile.read()
-    subprocess.run(runfile_contents, shell=True, check=False)
+    try:
+        subprocess.run(runfile_contents, shell=True, check=False)
+    except:
+        print("Exiting 507ex enviornment...")
     #cleanup
     os.chdir('..')
     shutil.rmtree(f'{current_path}/.fzx2-runtime/{exec_id}')
@@ -180,7 +183,14 @@ def unpack(path: str):
 if args.mode == 'build':
     build(args.path)
 if args.mode == 'exec':
-    execute(args.path)
+    try:
+        execute(args.path)
+    except KeyboardInterrupt:
+        print("Exiting 507ex enviornment...")
+        if os.path.exists("tmp.507ex"):
+            os.remove(f"tmp.507ex")
+    except Exception as e:
+        print(f"An error occured while executing the executable: {e}")
 if args.mode == 'upload':
     upload(args.path)
 if args.mode == 'unpack':
