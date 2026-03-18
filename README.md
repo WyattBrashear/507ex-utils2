@@ -9,6 +9,19 @@ Introducing 507ex 2.0 (Abbreviated as FZX2).
 - Auto Dependency Manager. Uses a list embedded in the metadata to ensure the application has the correct dependencies.
 - All operations are accessible through one module.
 - CAR (Central Application Repository) now supports authentication.
+### Perrfered installation
+~~~bash
+pip install fzx2
+~~~
+and use
+~~~bash
+fzx2 {option}
+~~~
+or 
+~~~bash
+python3 -m fzx2 {option}
+~~~
+
 ## CAR (Central Application Repository)
 CAR is a server system that allows seamless execution of applications from the command line.
 Example:
@@ -39,6 +52,19 @@ Compiled Executable Method:
 ./fzx2 start_server
 ~~~
 ## Installation
+### Optimal Method (pip)
+Just run
+~~~bash
+pip install fzx2
+~~~
+Run it with
+~~~bash
+fzx2 {option}
+~~~
+or 
+~~~bash
+python3 -m fzx2 {option}
+~~~
 ### Method 1 (Compiled Executable)
 1. Download the latest release from the releases page.
 2. Run the executable. (Recommended to be done in a terminal)
