@@ -54,6 +54,16 @@ All operations are listed below:
 3. build: Builds an executable
 4. unpack: Unpacks an executable
 5. upload: Uploads an executable
+## 507ex's required files
+All directories that are going to be turned into a 507ex requires 2 files:
+1. runfile (contains the command to run the script)
+2. dependfile
+Dependfile is in this format
+~~~text
+!{name}|{command}
+!PLATFORM {platform}
+{dependencies}
+~~~
 ## Demo Video
 https://drive.google.com/file/d/1QfDZL2Spc7WKqbfCU_m7xSnRLbJdnfNd/view?usp=sharing
 ## AI Usage
