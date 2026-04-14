@@ -64,7 +64,7 @@ def build(directory: str):
     with open (os.path.join(f"{directory}.507ex"), 'rb') as f:
         exec_contents = f.read()
     #Calculate hash
-    hashfunc = hashlib.new('blake3')
+    hashfunc = hashlib.new('blake2s')
     with open(os.path.join(f"{directory}.507ex"), 'rb') as f:
         while chunk := f.read(8192):
             hashfunc.update(chunk)
@@ -74,7 +74,7 @@ def build(directory: str):
         f.write("FZX2".encode())
         f.write("\n!507EX-METADATA".encode())
         f.write(f"\n507ex-hash|{exec_hash}".encode())
-        f.write(f"\n507ex-hashmode|blake3".encode())
+        f.write(f"\n507ex-hashmode|blake2s".encode())
         f.write(f"\n507ex-id|{uuid.uuid4()}".encode())
         #DTOC - Date/Time of Creation
         f.write(f"\n507ex-dtoc|{datetime.now().now()}".encode())
