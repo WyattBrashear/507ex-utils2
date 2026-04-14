@@ -56,12 +56,15 @@ def build(directory: str):
         depend_file = True
         with open(os.path.join(directory, 'dependfile'), 'r') as f:
             dependencies = f.read()
+    else:
+        dependencies = None
+        depend_file = False
     shutil.make_archive(directory, 'zip', directory)
     os.rename(f"{directory}.zip", os.path.join(f"{directory}.507ex"))
     with open (os.path.join(f"{directory}.507ex"), 'rb') as f:
         exec_contents = f.read()
     #Calculate hash
-    hashfunc = hashlib.new('blake2s')
+    hashfunc = hashlib.new('blake3')
     with open(os.path.join(f"{directory}.507ex"), 'rb') as f:
         while chunk := f.read(8192):
             hashfunc.update(chunk)
@@ -71,7 +74,7 @@ def build(directory: str):
         f.write("FZX2".encode())
         f.write("\n!507EX-METADATA".encode())
         f.write(f"\n507ex-hash|{exec_hash}".encode())
-        f.write(f"\n507ex-hashmode|blake2s".encode())
+        f.write(f"\n507ex-hashmode|blake3".encode())
         f.write(f"\n507ex-id|{uuid.uuid4()}".encode())
         #DTOC - Date/Time of Creation
         f.write(f"\n507ex-dtoc|{datetime.now().now()}".encode())
@@ -172,6 +175,9 @@ def upload(path: str):
     print(f"Upload URL: {json_data['url']}")
     print(f"Your Secret Code Is: {json_data['secret_code']}")
 def unpack(path: str):
+    if not os.path.exists("507ex-unpacked"):
+        os.mkdir("507ex-unpacked")
+    os.chdir("507ex-unpacked")
     os.mkdir(path)
     os.chdir(path)
     with zipfile.ZipFile(path, 'r') as zippy:
@@ -184,7 +190,10 @@ def main():
     parser.add_argument('path', help='The path to the Executable or folder')
     args = parser.parse_args(sys.argv[1:])
     if args.mode == 'build':
-        build(args.path)
+        try:
+            build(args.path)
+        except Exception as e:
+            print(f"An error occured while building the Executable: {e}")
     if args.mode == 'exec':
         try:
             execute(args.path)

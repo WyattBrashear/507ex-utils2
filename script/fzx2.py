@@ -56,6 +56,9 @@ def build(directory: str):
         depend_file = True
         with open(os.path.join(directory, 'dependfile'), 'r') as f:
             dependencies = f.read()
+    else:
+        dependencies = None
+        depend_file = False
     shutil.make_archive(directory, 'zip', directory)
     os.rename(f"{directory}.zip", os.path.join(f"{directory}.507ex"))
     with open (os.path.join(f"{directory}.507ex"), 'rb') as f:
@@ -184,7 +187,10 @@ def main():
     parser.add_argument('path', help='The path to the Executable or folder')
     args = parser.parse_args(sys.argv[1:])
     if args.mode == 'build':
-        build(args.path)
+        try:
+            build(args.path)
+        except Exception as e:
+            print(f"An error occured while building the Executable: {e}")
     if args.mode == 'exec':
         try:
             execute(args.path)
