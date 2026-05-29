@@ -40,10 +40,10 @@ def pull(file_id):
         with open(os.path.join("storage", f"{file_id}.json"), 'r') as json_file:
             codefile = json.load(json_file)
             secret_code = codefile['secret_code']
-    except FileNotFoundError:
+    except Exception as e:
         return 'File not found', 404
     if request.form.get('secret_code') == secret_code:
-        return send_from_directory('storage', f"{file_id}.fzx2", as_attachment=True)
+        return send_from_directory(f'{os.getcwd()}/storage', f"{file_id}.fzx2", as_attachment=True)
     else:
         return 'Invalid secret code', 401
 #Alright. Lets rewrite this format!
@@ -101,6 +101,7 @@ def execute(path: str):
         path = "tmp.fzx2"
     with open(path, 'rb') as f:
         if f.readline() != b'FZX2\n':
+            exit()
             raise ValueError('Invalid Executable!')
         line_counter = 0
         for line in f:
