@@ -197,6 +197,8 @@ def main():
     if args.mode == 'exec':
         try:
             execute(args.path)
+            if os.path.exists("tmp.fzx2"):
+                os.remove(f"tmp.fzx2")
         except KeyboardInterrupt:
             print("Exiting 507ex enviornment...")
             if os.path.exists("tmp.fzx2"):
