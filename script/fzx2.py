@@ -20,7 +20,7 @@ app = Flask(__name__)
 def push():
     print(os.getcwd())
     filename = secure_filename(request.form.get('file_id'))
-    with open(os.path.join("storage", f"{filename}.507ex"), 'wb') as f:
+    with open(os.path.join("storage", f"{filename}.fzx2"), 'wb') as f:
         f.write(request.files['file'].read())
     with open(os.path.join("storage", f"{filename}.json"), 'w') as f:
         secret_code = random.randint(100000, 999999)
@@ -43,7 +43,7 @@ def pull(file_id):
     except FileNotFoundError:
         return 'File not found', 404
     if request.form.get('secret_code') == secret_code:
-        return send_from_directory('storage', f"{file_id}.507ex", as_attachment=True)
+        return send_from_directory('storage', f"{file_id}.fzx2", as_attachment=True)
     else:
         return 'Invalid secret code', 401
 #Alright. Lets rewrite this format!
@@ -60,17 +60,17 @@ def build(directory: str):
         dependencies = None
         depend_file = False
     shutil.make_archive(directory, 'zip', directory)
-    os.rename(f"{directory}.zip", os.path.join(f"{directory}.507ex"))
-    with open (os.path.join(f"{directory}.507ex"), 'rb') as f:
+    os.rename(f"{directory}.zip", os.path.join(f"{directory}.fzx2"))
+    with open (os.path.join(f"{directory}.fzx2"), 'rb') as f:
         exec_contents = f.read()
     #Calculate hash
     hashfunc = hashlib.new('blake2s')
-    with open(os.path.join(f"{directory}.507ex"), 'rb') as f:
+    with open(os.path.join(f"{directory}.fzx2"), 'rb') as f:
         while chunk := f.read(8192):
             hashfunc.update(chunk)
         exec_hash = hashfunc.hexdigest()
 
-    with open(os.path.join(f"{directory}.507ex"), 'wb') as f:
+    with open(os.path.join(f"{directory}.fzx2"), 'wb') as f:
         f.write("FZX2".encode())
         f.write("\n!507EX-METADATA".encode())
         f.write(f"\n507ex-hash|{exec_hash}".encode())
@@ -82,10 +82,9 @@ def build(directory: str):
         f.write(f"\n!507EX-DEPENDENCIES\n{dependencies}".encode())
         f.write("\n!507EX-END-META\n".encode())
         f.write(exec_contents)
-    print(f"Successfully built {directory}.507ex")
+    print(f"Successfully built {directory}.fzx2")
 
 def execute(path: str):
-    print(path)
     current_path = os.getcwd()
     reading_depends = False
     has_depends = False
@@ -96,10 +95,10 @@ def execute(path: str):
         r = requests.post(path, data={'secret_code': hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()})
         if r.status_code == 401:
             print("Your Secret Code is invalid!")
-        with open("tmp.507ex", 'wb') as f:
+        with open("tmp.fzx2", 'wb') as f:
             f.write(r.content)
         fromcar = True
-        path = "tmp.507ex"
+        path = "tmp.fzx2"
     with open(path, 'rb') as f:
         if f.readline() != b'FZX2\n':
             raise ValueError('Invalid Executable!')
@@ -157,7 +156,7 @@ def execute(path: str):
     os.chdir('..')
     shutil.rmtree(os.path.join(current_path, '.fzx2-runtime', exec_id))
     if fromcar:
-        os.remove(os.path.join(current_path, "tmp.507ex"))
+        os.remove(os.path.join(current_path, "tmp.fzx2"))
 
 def upload(path: str):
     if not os.path.exists(path):
@@ -175,6 +174,9 @@ def upload(path: str):
     print(f"Upload URL: {json_data['url']}")
     print(f"Your Secret Code Is: {json_data['secret_code']}")
 def unpack(path: str):
+    if not os.path.exists("507ex-unpacked"):
+        os.mkdir("507ex-unpacked")
+    os.chdir("507ex-unpacked")
     os.mkdir(path)
     os.chdir(path)
     with zipfile.ZipFile(path, 'r') as zippy:
@@ -196,8 +198,8 @@ def main():
             execute(args.path)
         except KeyboardInterrupt:
             print("Exiting 507ex enviornment...")
-            if os.path.exists("tmp.507ex"):
-                os.remove(f"tmp.507ex")
+            if os.path.exists("tmp.fzx2"):
+                os.remove(f"tmp.fzx2")
         except Exception as e:
             print(f"An error occured while executing the executable: {e}")
     if args.mode == 'upload':
@@ -209,6 +211,9 @@ def main():
             os.mkdir(os.path.join('.', 'storage'))
         except FileExistsError:
             pass
-        app.run()
+        if args.path == "expose":
+            app.run(port=999, host='0.0.0.0')
+        else:
+            app.run(port=999)
 if __name__ == '__main__':
     main()
