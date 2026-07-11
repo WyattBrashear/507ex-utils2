@@ -8,12 +8,12 @@ import subprocess
 import sys
 import uuid
 import zipfile
+import wdsflib
 from datetime import datetime
 
 import requests
 from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename
-
 
 app = Flask(__name__)
 @app.route('/push', methods=['POST'])
@@ -134,6 +134,10 @@ def execute(path: str):
                     reading_depends = True
             line_counter += 1
     os.makedirs(os.path.join(current_path, '.fzx2-runtime', exec_id), exist_ok=True)
+    os.makedirs(os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent'), exist_ok=True)
+    if not os.path.exists(os.path.join(current_path, '.fzx2-runtime', ".fzx2-persistent", exec_id)):
+        os.makedirs(os.path.join(current_path, '.fzx2-runtime', ".fzx2-persistent", exec_id))
+    #Take data from the persistent archive in .fzx2-persistent
     #Hash the executable
     line_counter +=2
     with open(path, 'rb') as f:
@@ -147,14 +151,32 @@ def execute(path: str):
     os.chdir(os.path.join(current_path, '.fzx2-runtime', exec_id))
     with zipfile.ZipFile(os.path.join(current_path, path), 'r') as zippy:
         zippy.extractall()
+    # Extract the persistent data and do the security checks
+    shutil.copy(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', exec_id, f'{exec_id}.zip'), os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent', f'{exec_id}.zip'))
     with open("runfile", 'r') as runfile:
         runfile_contents = runfile.read()
     try:
         subprocess.run(runfile_contents, shell=True, check=False)
     except:
-        print("Exiting 507ex enviornment...")
+        print("\nExiting 507ex enviornment...")
     #cleanup
     os.chdir('..')
+    shutil.make_archive(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', exec_id), 'zip', os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent'))
+    #Yeah baby. Were hashing persistent data!!!!!!!
+    #God i just had 15oz of coffee this is gonna be fun
+    with open(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}.zip'), 'rb') as persistent_data:
+        persistent_data_hash = hashlib.new(exec_hashmode, persistent_data.read()).hexdigest()
+        persistent_data.seek(0)
+        persistent_data_raw = persistent_data.read()
+        with open(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}.zip'), 'wb') as persistent_write:
+            persistent_write.write("!FZX2-PERSISTENT-META\n".encode())
+            persistent_write.write(f"!PERSISTENT-HASH|{persistent_data_hash}".encode())
+            persistent_write.write("\n#Hey There! You probably shouldn't be editing this file. As modifying it will most likely break the executable that this is attached to!\n".encode())
+            persistent_write.write(f"!ATTACHED-EXEC-ID|{exec_id}\n".encode())
+            persistent_write.write("!FZX2-END-PERSISTENT-META\n".encode())
+            persistent_write.write(persistent_data_raw)
+    shutil.move(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}.zip'), os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}', f'{exec_id}.zip'))
+
     shutil.rmtree(os.path.join(current_path, '.fzx2-runtime', exec_id))
     if fromcar:
         os.remove(os.path.join(current_path, "tmp.fzx2"))

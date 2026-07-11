@@ -84,7 +84,7 @@ def build(directory: str):
         f.write(exec_contents)
     print(f"Successfully built {directory}.fzx2")
 
-def execute(path: str):
+def execute(path: str, yes: bool = False, secret_code: str = None):
     current_path = os.getcwd()
     reading_depends = False
     has_depends = False
@@ -92,7 +92,12 @@ def execute(path: str):
     fromcar = False
     #CAR Server logic
     if path.startswith("http://") or path.startswith("https://"):
-        r = requests.post(path, data={'secret_code': hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()})
+        scode = ""
+        if not secret_code:
+            scode = hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()
+        else:
+            scode = hashlib.sha256(str(secret_code).encode()).hexdigest()
+        r = requests.post(path, data={'secret_code': scode})
         if r.status_code == 401:
             print("Your Secret Code is invalid!")
         with open("tmp.fzx2", 'wb') as f:
@@ -115,7 +120,11 @@ def execute(path: str):
                 exec_id = line.split(b'|')[1].decode().replace('\n', '')
             if line.startswith(b'507ex-depends'):
                 if line.split(b'|')[1].decode() == 'True\n':
-                    if input("Executable has dependencies that it wants to install. Continue? (y/n)\n").lower() == 'y':
+                    if not yes:
+                        input_response = input("Executable has dependencies that it wants to install. Continue? (y/n)\n")
+                    else:
+                        input_response = 'y'
+                    if input_response.lower() == 'y':
                         has_depends = True
                     else:
                         raise ValueError('Aborted!')
@@ -188,6 +197,8 @@ def main():
     parser.add_argument('mode', choices=['build', 'upload', 'exec', 'unpack', 'start_server'],
                         help='The operation to perform.')
     parser.add_argument('path', help='The path to the Executable or folder')
+    parser.add_argument('-y', action='store_true', help='YES')
+    parser.add_argument('-s', '--secret', help='Secret code')
     args = parser.parse_args(sys.argv[1:])
     if args.mode == 'build':
         try:
@@ -196,7 +207,7 @@ def main():
             print(f"An error occured while building the Executable: {e}")
     if args.mode == 'exec':
         try:
-            execute(args.path)
+            execute(args.path, args.y, args.secret)
             if os.path.exists("tmp.fzx2"):
                 os.remove(f"tmp.fzx2")
         except KeyboardInterrupt:

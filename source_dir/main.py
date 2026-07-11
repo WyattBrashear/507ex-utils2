@@ -1,2 +1,0 @@
-import together
-print("hi")
