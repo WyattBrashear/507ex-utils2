@@ -9,6 +9,8 @@ Introducing 507ex 2.0 (Abbreviated as FZX2).
 - Auto Dependency Manager. Uses a list embedded in the metadata to ensure the application has the correct dependencies.
 - All operations are accessible through one module.
 - CAR (Central Application Repository) now supports authentication.
+- Executables can now store data persistently. 
+- Persistent data is checked for integrity.
 ### Perrfered installation
 ~~~bash
 pip install fzx2
@@ -90,6 +92,16 @@ Dependfile is in this format
 !PLATFORM {platform}
 {dependencies}
 ~~~
+## Persistent Data
+All files stored in persistent data are stored in a directory in the executable's runtime and inside a subdirectory of the
+main runtime.
+### Persistent Data Integrity System
+Like executables, persistent data is checked for integrity. However, persistent data is subject to a bit more scrutiny.
+The checks are as follows:
+1. Checksum calculation of persistent data.
+2. All persistent data archives are also tied to specific executable's ID
+
+This means, that if executable A is trying to read executable B's persistent data, it will fail.
 ## Demo Video
 https://drive.google.com/file/d/1QfDZL2Spc7WKqbfCU_m7xSnRLbJdnfNd/view?usp=sharing
 ## AI Usage

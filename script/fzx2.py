@@ -14,7 +14,6 @@ import requests
 from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename
 
-
 app = Flask(__name__)
 @app.route('/push', methods=['POST'])
 def push():
@@ -84,90 +83,131 @@ def build(directory: str):
         f.write(exec_contents)
     print(f"Successfully built {directory}.fzx2")
 
-def execute(path: str, yes: bool = False, secret_code: str = None):
-    current_path = os.getcwd()
-    reading_depends = False
-    has_depends = False
-    dependency_platform = ''
-    fromcar = False
-    #CAR Server logic
-    if path.startswith("http://") or path.startswith("https://"):
-        scode = ""
-        if not secret_code:
-            scode = hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()
-        else:
-            scode = hashlib.sha256(str(secret_code).encode()).hexdigest()
-        r = requests.post(path, data={'secret_code': scode})
-        if r.status_code == 401:
-            print("Your Secret Code is invalid!")
-        with open("tmp.fzx2", 'wb') as f:
-            f.write(r.content)
-        fromcar = True
-        path = "tmp.fzx2"
-    with open(path, 'rb') as f:
-        if f.readline() != b'FZX2\n':
-            exit()
-            raise ValueError('Invalid Executable!')
-        line_counter = 0
-        for line in f:
-            if line.startswith(b'!507EX-END-META'):
-                break
-            if line.startswith(b'507ex-hash|'):
-                exec_hash = line.split(b'|')[1].decode().replace('\n', '')
-            if line.startswith(b'507ex-hashmode'):
-                exec_hashmode = line.split(b'|')[1].decode().replace('\n', '')
-            if line.startswith(b'507ex-id'):
-                exec_id = line.split(b'|')[1].decode().replace('\n', '')
-            if line.startswith(b'507ex-depends'):
-                if line.split(b'|')[1].decode() == 'True\n':
-                    if not yes:
-                        input_response = input("Executable has dependencies that it wants to install. Continue? (y/n)\n")
-                    else:
-                        input_response = 'y'
-                    if input_response.lower() == 'y':
-                        has_depends = True
-                    else:
-                        raise ValueError('Aborted!')
-                else:
-                    has_depends = False
-            if reading_depends:
-                if line.startswith(b'!') and not line.startswith(b'!PLATFORM'):
-                    command = line.split(b'|')[1].decode().replace('\n', '')
-                if dependency_platform == sys.platform or dependency_platform == '*':
-                    arg = line.decode().replace('\n', '')
-                    subprocess.run(f"{command} {arg}", shell=True, check=False)
-                if line.startswith(b'!PLATFORM'):
-                    dependency_platform = line.decode().replace('\n', '').replace('!PLATFORM ', '')
-            if line.startswith(b'!507EX-DEPENDENCIES'):
-                if has_depends:
-                    reading_depends = True
-            line_counter += 1
-    os.makedirs(os.path.join(current_path, '.fzx2-runtime', exec_id), exist_ok=True)
-    #Hash the executable
-    line_counter +=2
-    with open(path, 'rb') as f:
-        lines = b''.join(f.readlines()[line_counter:])
-        file_hash = hashlib.new(exec_hashmode, lines).hexdigest()
-    pass_hashcheck = False
-    if file_hash == exec_hash:
-        pass_hashcheck = True
-    else:
-        raise ValueError('Hash Verification Failed. Executable may have been damaged.')
-    os.chdir(os.path.join(current_path, '.fzx2-runtime', exec_id))
-    with zipfile.ZipFile(os.path.join(current_path, path), 'r') as zippy:
-        zippy.extractall()
-    with open("runfile", 'r') as runfile:
-        runfile_contents = runfile.read()
+def execute(path: str, y: bool):
     try:
-        subprocess.run(runfile_contents, shell=True, check=False)
-    except:
-        print("Exiting 507ex enviornment...")
-    #cleanup
-    os.chdir('..')
-    shutil.rmtree(os.path.join(current_path, '.fzx2-runtime', exec_id))
-    if fromcar:
-        os.remove(os.path.join(current_path, "tmp.fzx2"))
+        current_path = os.getcwd()
+        reading_depends = False
+        has_depends = False
+        dependency_platform = ''
+        fromcar = False
+        #CAR Server logic
+        if path.startswith("http://") or path.startswith("https://"):
+            r = requests.post(path, data={'secret_code': hashlib.sha256(str(input("Please enter the secret code: \n")).encode()).hexdigest()})
+            if r.status_code == 401:
+                print("Your Secret Code is invalid!")
+            with open("tmp.fzx2", 'wb') as f:
+                f.write(r.content)
+            fromcar = True
+            path = "tmp.fzx2"
+        with open(path, 'rb') as f:
+            if f.readline() != b'FZX2\n':
+                raise ValueError('Invalid Executable!')
+            line_counter = 0
+            for line in f:
+                if line.startswith(b'!507EX-END-META'):
+                    break
+                if line.startswith(b'507ex-hash|'):
+                    exec_hash = line.split(b'|')[1].decode().replace('\n', '')
+                if line.startswith(b'507ex-hashmode'):
+                    exec_hashmode = line.split(b'|')[1].decode().replace('\n', '')
+                if line.startswith(b'507ex-id'):
+                    exec_id = line.split(b'|')[1].decode().replace('\n', '')
+                if line.startswith(b'507ex-depends'):
+                    if not y:
+                        thing = input("Executable has dependencies that it wants to install. Continue? (y/n)\n").lower()
+                    if line.split(b'|')[1].decode() == 'True\n':
+                        if y or thing == 'y':
+                            has_depends = True
+                        else:
+                            raise ValueError('Aborted!')
+                    else:
+                        has_depends = False
+                if reading_depends:
+                    if line.startswith(b'!') and not line.startswith(b'!PLATFORM'):
+                        command = line.split(b'|')[1].decode().replace('\n', '')
+                    if dependency_platform == sys.platform or dependency_platform == '*':
+                        arg = line.decode().replace('\n', '')
+                        subprocess.run(f"{command} {arg}", shell=True, check=False)
+                    if line.startswith(b'!PLATFORM'):
+                        dependency_platform = line.decode().replace('\n', '').replace('!PLATFORM ', '')
+                if line.startswith(b'!507EX-DEPENDENCIES'):
+                    if has_depends:
+                        reading_depends = True
+                line_counter += 1
+        os.makedirs(os.path.join(current_path, '.fzx2-runtime', exec_id), exist_ok=True)
+        os.makedirs(os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent'), exist_ok=True)
+        if not os.path.exists(os.path.join(current_path, '.fzx2-runtime', ".fzx2-persistent", exec_id)):
+            os.makedirs(os.path.join(current_path, '.fzx2-runtime', ".fzx2-persistent", exec_id))
+        #Take data from the persistent archive in .fzx2-persistent
+        #Hash the executable
+        line_counter +=2
+        with open(path, 'rb') as f:
+            lines = b''.join(f.readlines()[line_counter:])
+            file_hash = hashlib.new(exec_hashmode, lines).hexdigest()
+        pass_hashcheck = False
+        if file_hash == exec_hash:
+            pass_hashcheck = True
+        else:
+            raise ValueError('Hash Verification Failed. Executable may have been damaged.')
+        os.chdir(os.path.join(current_path, '.fzx2-runtime', exec_id))
+        with zipfile.ZipFile(os.path.join(current_path, path), 'r') as zippy:
+            zippy.extractall()
+        # Extract the persistent data and do the security checks
+        if os.path.exists(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', exec_id, f'{exec_id}.zip')):
+            with open(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', exec_id, f'{exec_id}.zip'), 'rb') as persistent_data:
+                meta = []
+                everything_else = []
+                for line in persistent_data:
+                    if line.startswith(b'!'):
+                        meta.append(line.decode().replace('\n', ''))
+                    elif not line.startswith(b'#Hey'):
+                        everything_else.append(line)
+                persistent_data.seek(0)
+                persistent_data_verified_hash = False
+                persistent_data_verified_id = False
+                if meta[1].split("|")[1] == hashlib.new(exec_hashmode, b''.join(everything_else)).hexdigest():
+                    persistent_data_verified_hash = True
+                if meta[2].split("|")[1] == exec_id:
+                    persistent_data_verified_id = True
+            if not persistent_data_verified_hash or not persistent_data_verified_id:
+                raise ValueError('Verification of Persistent Storage Failed. Persistent storage may have been damaged.')
+            shutil.copy(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', exec_id, f'{exec_id}.zip'), os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent', f'{exec_id}.zip'))
+            os.chdir('.fzx2-persistent')
+            with zipfile.ZipFile(os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent', f'{exec_id}.zip'), 'r') as extract_persistent:
+                extract_persistent.extractall()
+                extract_persistent.close()
+            os.remove(os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent', f'{exec_id}.zip'))
+            os.chdir('..')
+        with open("runfile", 'r') as runfile:
+            runfile_contents = runfile.read()
+        try:
+            subprocess.run(runfile_contents, shell=True, check=False)
+        except:
+            print("\nExiting 507ex enviornment...")
+    except Exception as e:
+        print(f"An error occurred while executing the executable: {e}")
+    finally:
+        #cleanup
+        os.chdir('..')
+        shutil.make_archive(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', exec_id), 'zip', os.path.join(current_path, '.fzx2-runtime', exec_id, '.fzx2-persistent'))
+        #Yeah baby. Were hashing persistent data!!!!!!!
+        #God i just had 15oz of coffee this is gonna be fun
+        with open(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}.zip'), 'rb') as persistent_data:
+            persistent_data_hash = hashlib.new(exec_hashmode, persistent_data.read()).hexdigest()
+            persistent_data.seek(0)
+            persistent_data_raw = persistent_data.read()
+            with open(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}.zip'), 'wb') as persistent_write:
+                persistent_write.write("!FZX2-PERSISTENT-META\n".encode())
+                persistent_write.write(f"!PERSISTENT-HASH|{persistent_data_hash}".encode())
+                persistent_write.write("\n#Hey There! You probably shouldn't be editing this file. As modifying it will most likely break the executable that this is attached to!\n".encode())
+                persistent_write.write(f"!ATTACHED-EXEC-ID|{exec_id}\n".encode())
+                persistent_write.write("!FZX2-END-PERSISTENT-META\n".encode())
+                persistent_write.write(persistent_data_raw)
+        shutil.move(os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}.zip'), os.path.join(current_path, '.fzx2-runtime', '.fzx2-persistent', f'{exec_id}', f'{exec_id}.zip'))
 
+        shutil.rmtree(os.path.join(current_path, '.fzx2-runtime', exec_id))
+        if fromcar:
+            os.remove(os.path.join(current_path, "tmp.fzx2"))
 def upload(path: str):
     if not os.path.exists(path):
         raise FileNotFoundError('File not found!')
@@ -198,7 +238,6 @@ def main():
                         help='The operation to perform.')
     parser.add_argument('path', help='The path to the Executable or folder')
     parser.add_argument('-y', action='store_true', help='YES')
-    parser.add_argument('-s', '--secret', help='Secret code')
     args = parser.parse_args(sys.argv[1:])
     if args.mode == 'build':
         try:
@@ -207,7 +246,7 @@ def main():
             print(f"An error occured while building the Executable: {e}")
     if args.mode == 'exec':
         try:
-            execute(args.path, args.y, args.secret)
+            execute(args.path, args.y)
             if os.path.exists("tmp.fzx2"):
                 os.remove(f"tmp.fzx2")
         except KeyboardInterrupt:
